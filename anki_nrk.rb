@@ -7,6 +7,7 @@ gemfile do
   gem 'anki'
   gem 'faraday'
   gem 'webvtt-ruby'
+  gem 'ruby-openai'
   gem 'dotenv'
 end
 
@@ -16,6 +17,7 @@ require 'anki'
 require "faraday"
 require "json"
 require "webvtt"
+require 'openai'
 
 def create_anki_cards_by_subs(show:, season:, episode: )
   anki_subtitles = Anki2.new(name: "#{show}: Season #{season} Episode #{episode}", output_path: "./#{show}_#{season}_#{episode}.apkg")
@@ -39,7 +41,8 @@ end
 def create_anki_cards_by_words(show:, season:, episode: )
   prf_id = get_prf_id(show, season, episode)
 
-  # cleanup: get rid of easy words, duplicates, etc
+  p 'fetching words...'
+  # cleanup: gets rid of easy words, duplicates, etc
   words = nrk_subs(prf_id)
     .map(&:text)
     .map { _1.gsub(/[^a-zA-Z]/, " ") }
@@ -49,6 +52,8 @@ def create_anki_cards_by_words(show:, season:, episode: )
     .map(&:strip)
     .uniq
     .select { _1.length > 3 }
+    .then(&method(:remove_easy_words))
+    .split(", ")
 
   card_headers = [ "front", "back" ]
 
@@ -88,6 +93,21 @@ def translate(text)
   .then(&JSON.method(:parse))
   .dig('data', 'translations')
   .first['translatedText']
+end
+
+def remove_easy_words(words)
+  chat_question = "act as a norwegian student with an a2 level. "\
+                  "Which of this words are likely new words for you?: #{words.join(" ")}. "\
+                  "Only give me the words as an answer, separated by commas. "\
+                  "Remove words that are in english or in other languages that are not norwegian"
+
+  chatgpt = OpenAI::Client.new(access_token: ENV['OPENAI_TOKEN'])
+  chatgpt.chat(
+  parameters: {
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: chat_question}],
+    temperature: 0.7,
+  }).dig("choices", 0, "message", "content")
 end
 
 if ARGV[3] == 'words'
