@@ -7,6 +7,7 @@ Lets say we want to generate flashcards for Skam, season two, episode one, u jus
 ```
 ruby anki_nrk.rb skam 2 1
 ```
+(if the show has more that one word u just write it like this, for example for them 'Hvem bor her?' show: hvem-bor-her)
 
 This will generate this file, that you can load on ANKI:
 
