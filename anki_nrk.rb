@@ -24,15 +24,15 @@ def create_anki_cards_by_subs(show:, season:, episode: )
 
   prf_id = get_prf_id(show, season, episode)
 
-  nrk_subs(prf_id).each do |sub|
-    translation = translate(sub.text)
+  p "filtering subs..."
+  remove_easy_subs(nrk_subs(prf_id)).each do |sub_text|
+    translation = translate(sub_text)
 
-    p "start: #{sub.start}"
-    p "text: #{sub.text}"
+    p "text: #{sub_text}"
     p "translation: #{translation}"
     p "------------------"
 
-    anki_subtitles.add_card("time: #{sub.start}<br><br>text: #{sub.text}", translation)
+    anki_subtitles.add_card(sub_text, translation)
   end
 
   anki_subtitles.save
@@ -98,14 +98,30 @@ end
 def remove_easy_words(words)
   chat_question = "act as a norwegian student with an a2 level. "\
                   "Which of this words are likely new words for you?: #{words.join(" ")}. "\
-                  "Only give me the words as an answer, separated by commas. "\
-                  "Remove words that are in english or in other languages that are not norwegian"
+                  "Only give me the words as an answer, separated by commas. no smart bot response text."\
+                  "Remove words that are in english or in other languages that are not norwegian as well. "\
+                  #"Return only the 40 most difficult words."
 
+  ask_chat_gpt(chat_question)
+end
+
+def remove_easy_subs(subs)
+  chat_question = "act as a norwegian student with an a2 level that wants to study words from subtitles "\
+                  "on a norwegian tv show. Which of these groups of subtitles are likely difficult to understand for you?: #{subs.map(&:text).join(';')}."\
+                  "Each group of subtitles is separated with the ; character. Return the group of subtitles separated with the character ; as well. "\
+                  "Only return the grouped subtitles separated by ;, no enumeration, no smart bot response text, because i want to use this output as a"\
+                  "csv file."\
+                  "Return only the 20 most difficult groups of subtitles."
+
+  ask_chat_gpt(chat_question).split(";")
+end
+
+def ask_chat_gpt(question)
   chatgpt = OpenAI::Client.new(access_token: ENV['OPENAI_TOKEN'])
   chatgpt.chat(
   parameters: {
     model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: chat_question}],
+    messages: [{ role: "user", content: question}],
     temperature: 0.7,
   }).dig("choices", 0, "message", "content")
 end

@@ -1,4 +1,4 @@
-# A.K.A Hopefully this will motivate me to learn more norwegian 😁
+# Hopefully this will motivate me to learn more norwegian 😁
 
 Ruby script that generates flashcards with translations of subtitles for NRK tv shows. Flashcards powered by ANKI.
 
@@ -18,5 +18,11 @@ skam_2_1.dpkg
 Translations rely on google translations api unfortunately 😑, so you have to set the key in an .env file:
 
 ```
-GOOGLE_TRANSLATIONS_API_KEY=my key
+GOOGLE_TRANSLATIONS_API_KEY=my_key
+```
+
+and some 'magic' through the chat gpt api
+
+```
+OPENAI_TOKEN=my_token
 ```
