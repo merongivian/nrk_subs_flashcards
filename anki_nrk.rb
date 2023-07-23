@@ -57,7 +57,7 @@ def create_anki_cards_by_words(show:, season:, episode: )
     { "front" => word, "back" => translate(word) }
   end
 
-  p "generating anki card"
+  p "generating anki deck"
   Anki::Deck.new(card_headers:, card_data: ).generate_deck(file: './norwegian_words.txt')
   p "done"
 end
