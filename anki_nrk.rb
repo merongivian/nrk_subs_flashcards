@@ -15,37 +15,40 @@ require "faraday"
 require "json"
 require "webvtt"
 
-def create_anki_cards_for_episode(show:, season:, episode: )
-  @anki = Anki2.new(name: "#{show}: Season #{season} Episode #{episode}", output_path: "./#{show}_#{season}_#{episode}.apkg")
+def create_anki_cards_by_subs(show:, season:, episode: )
+  @anki_subtitles = Anki2.new(name: "#{show}: Season #{season} Episode #{episode}", output_path: "./#{show}_#{season}_#{episode}.apkg")
 
+  prf_id = get_prf_id(show, season, episode)
+  prefix = prf_id[0...6]
+  cache = prf_id[6...8]
+
+  nrk_subs(prf_id, prefix, cache).each do |sub|
+    translation = translate(sub.text)
+
+    p "start: #{sub.start}"
+    p "text: #{sub.text}"
+    p "translation: #{translation}"
+    p "------------------"
+
+    @anki_subtitles.add_card("time: #{sub.start}<br><br>text: #{sub.text}", translation)
+  end
+
+  @anki_subtitles.save
+end
+
+def get_prf_id(show, season, episode)
   Faraday.get("https://psapi.nrk.no/tv/catalog/series/#{show}")
   .body
   .then(&JSON.method(:parse))
   .then { _1.dig('_embedded', 'seasons', season, '_embedded', 'episodes', episode, 'prfId') }
-  .then do |prf_id|
-    prefix = prf_id[0...6]
-    cache = prf_id[6...8]
-
-    create_anki_cards_for_subs(prf_id: , prefix: , cache: )
-    @anki.save
-  end
 end
 
-def create_anki_cards_for_subs(prf_id:, prefix: ,cache: )
+def nrk_subs(prf_id, prefix ,cache )
   link = "https://undertekst.nrk.no/prod/%{prefix}/%{dir}/%{prfid}/%{lang}/%{prfid}.vtt"
   real_link = link % {prfid: prf_id, prefix: prefix, dir: cache, lang: "TTV"}
   subs = Faraday.get(real_link).body
 
-  WebVTT.from_blob(subs).cues.each do |cue|
-    translation = translate(cue.text)
-
-    p "start: #{cue.start}"
-    p "text: #{cue.text}"
-    p "translation: #{translation}"
-    p "------------------"
-
-    @anki.add_card("start: #{cue.start}<br>text: #{cue.text}", translation)
-  end
+  WebVTT.from_blob(subs).cues
 end
 
 def translate(text)
@@ -58,4 +61,4 @@ def translate(text)
   .first['translatedText']
 end
 
-create_anki_cards_for_episode(show: ARGV[0], season: ARGV[1].to_i, episode: ARGV[2].to_i)
+create_anki_cards_by_subs(show: ARGV[0], season: ARGV[1].to_i, episode: ARGV[2].to_i)
