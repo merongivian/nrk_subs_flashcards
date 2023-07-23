@@ -18,7 +18,7 @@ require "json"
 require "webvtt"
 
 def create_anki_cards_by_subs(show:, season:, episode: )
-  @anki_subtitles = Anki2.new(name: "#{show}: Season #{season} Episode #{episode}", output_path: "./#{show}_#{season}_#{episode}.apkg")
+  anki_subtitles = Anki2.new(name: "#{show}: Season #{season} Episode #{episode}", output_path: "./#{show}_#{season}_#{episode}.apkg")
 
   prf_id = get_prf_id(show, season, episode)
 
@@ -30,10 +30,10 @@ def create_anki_cards_by_subs(show:, season:, episode: )
     p "translation: #{translation}"
     p "------------------"
 
-    @anki_subtitles.add_card("time: #{sub.start}<br><br>text: #{sub.text}", translation)
+    anki_subtitles.add_card("time: #{sub.start}<br><br>text: #{sub.text}", translation)
   end
 
-  @anki_subtitles.save
+  anki_subtitles.save
 end
 
 def create_anki_cards_by_words(show:, season:, episode: )
